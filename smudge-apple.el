@@ -19,6 +19,16 @@
   :group 'smudge
   :type 'string)
 
+(defcustom smudge-apple-return-focus-after-play t
+  "When non-nil, restore window focus after starting a track.
+Spotify's AppleScript `play track' command raises the Spotify app to the
+foreground (unlike playpause/next/previous, which don't), so starting a track
+from a Smudge buffer yanks you out of Emacs.  With this enabled, Smudge records
+whichever app was frontmost, issues the play, then re-activates that app — so
+playback stays distraction-free.  macOS only."
+  :group 'smudge
+  :type 'boolean)
+
 ;; Do not change this unless you know what you're doing
 (defconst smudge-apple-player-status-script "
 # Source: https://github.com/andrehaveman/smudge-node-applescript
@@ -116,8 +126,21 @@ Return the resulting status string."
   (smudge-apple-command "set shuffling to not shuffling"))
 
 (defun smudge-apple-player-play-track (track-id context-id)
-  "Dispatch message about playing TRACK-ID in CONTEXT-ID."
-  (smudge-apple-command (format "play track \"%s\" in context \"%s\"" track-id context-id)))
+  "Dispatch message about playing TRACK-ID in CONTEXT-ID.
+When `smudge-apple-return-focus-after-play' is non-nil, capture the frontmost
+app, play, and re-activate it so Spotify doesn't steal focus.  Done in a single
+asynchronous osascript so Emacs never blocks and the ordering is deterministic."
+  (if smudge-apple-return-focus-after-play
+      (let ((script
+             (format (concat
+                      "tell application \"System Events\" to"
+                      " set frontApp to name of first process whose frontmost is true\n"
+                      "tell application \"Spotify\" to play track \"%s\" in context \"%s\"\n"
+                      "delay 0.1\n"
+                      "tell application frontApp to activate")
+                     track-id context-id)))
+        (start-process "smudge-play" nil smudge-osascript-bin-path "-e" script))
+    (smudge-apple-command (format "play track \"%s\" in context \"%s\"" track-id context-id))))
 
 (provide 'smudge-apple)
 ;;; smudge-apple.el ends here
