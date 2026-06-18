@@ -475,7 +475,7 @@ POST /me/playlists (creates under the current user) instead."
   (splotch-api-call-async
    "POST"
    "/me/playlists"
-   (format "{\"name\":\"%s\",\"public\":\"%s\"}" name (if public "true" "false"))
+   (format "{\"name\":\"%s\",\"public\":%s}" name (if public "true" "false"))
    callback))
 
 (defun splotch-api-playlist-add-track (user-id playlist-id track-id callback)
@@ -509,15 +509,15 @@ Removed by USER-ID. Call CALLBACK with results."
 (defun splotch-api-playlist-remove-tracks (playlist-id track-ids callback)
   "Remove TRACK-IDS from PLAYLIST-ID.
 Call CALLBACK with results.  Feb-2026 renamed the path
-DELETE /playlists/{id}/tracks -> DELETE /playlists/{id}/items; the request body
-still uses the `tracks' array of {\"uri\": ...} objects."
+DELETE /playlists/{id}/tracks -> DELETE /playlists/{id}/items, and renamed the
+request body's array field `tracks' -> `items' (of {\"uri\": ...} objects)."
   (let ((tracks (format "%s" (mapconcat
                               (lambda (x) (format "{\"uri\": %s}" (splotch-api-format-id "track" x)))
                               track-ids ","))))
     (splotch-api-call-async
      "DELETE"
      (format "/playlists/%s/items" (url-hexify-string playlist-id))
-     (format "{\"tracks\": [ %s ]}" tracks)
+     (format "{\"items\": [ %s ]}" tracks)
      callback)))
 
 (defun splotch-api-playlist-follow (playlist callback)
@@ -729,9 +729,8 @@ Up to 50 tracks can be specified per API call.
 Calls CALLBACK function with the API response.
 
 Feb-2026 consolidated the per-type PUT /me/{tracks,albums,...} endpoints into
-PUT /me/library, which takes full Spotify URIs (not bare IDs).
-NOTE: this /me/library request schema has not yet been verified against the live
-API; if liking a track fails, this is the first place to check."
+PUT /me/library, which takes full Spotify URIs (not bare IDs).  The {\"uris\": [...]}
+body is verified against the live Web API reference."
   (splotch-api-call-async
    "PUT"
    "/me/library"
@@ -747,9 +746,8 @@ Up to 50 tracks can be specified per API call.
 Calls CALLBACK function with the API response.
 
 Feb-2026 consolidated the per-type DELETE /me/{tracks,albums,...} endpoints into
-DELETE /me/library, which takes full Spotify URIs (not bare IDs).
-NOTE: this /me/library request schema has not yet been verified against the live
-API; if unliking a track fails, this is the first place to check."
+DELETE /me/library, which takes full Spotify URIs (not bare IDs).  The {\"uris\": [...]}
+body is verified against the live Web API reference."
   (splotch-api-call-async
    "DELETE"
    "/me/library"

@@ -45,24 +45,26 @@ track listing on upstream Smudge. The affected endpoints and response parsing in
 - **Popularity bar** (`splotch-api-popularity-bar`): the Track `popularity` field
   was removed; the bar now renders empty instead of erroring on a nil value.
 
-### Changed — write paths updated for February 2026 (unverified)
+### Changed — write paths updated for February 2026
 
-These less-used write paths were moved to the new endpoints. They are not part of
-the maintainer's daily workflow, and the request body for the consolidated
-library endpoint has **not yet been verified against the live API** (flagged with
-a `NOTE:` in-code):
+These write paths were moved to the new endpoints and verified against the live
+Web API reference:
 
 - **Create playlist** (`splotch-api-playlist-create`): `POST /users/{id}/playlists`
-  → `POST /me/playlists`.
+  → `POST /me/playlists`. `public` is now sent as a JSON boolean (was a quoted
+  string, which could make a private playlist public).
 - **Add tracks to playlist** (`splotch-api-playlist-add-tracks`):
   `POST /users/{id}/playlists/{id}/tracks` → `POST /playlists/{id}/items`
-  (request body unchanged: a JSON array of Spotify URIs).
+  (request body unchanged: `{"uris": [...]}`).
 - **Remove tracks from playlist** (`splotch-api-playlist-remove-tracks`):
-  `DELETE /playlists/{id}/tracks` → `DELETE /playlists/{id}/items`.
+  `DELETE /playlists/{id}/tracks` → `DELETE /playlists/{id}/items`. The request
+  body's array field was also renamed `tracks` → `items` (of `{"uri": …}`
+  objects); sending the old `tracks` field silently failed to remove anything.
 - **Save/remove library tracks** (`splotch-api-save-tracks-to-my-library`,
   `splotch-api-remove-tracks-from-my-library`): the per-type `PUT`/`DELETE`
   `/me/tracks` endpoints were consolidated into `/me/library`, which now takes
-  full Spotify URIs rather than bare IDs.
+  full Spotify URIs (`{"uris": [...]}`) rather than bare IDs. (Reads stay on
+  `GET /me/tracks`, which was not consolidated.)
 
 ### Added
 
